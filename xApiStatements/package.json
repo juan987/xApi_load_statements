@@ -13,6 +13,7 @@
   "author": "Juan Miguel Navarro",
   "license": "ISC",
   "dependencies": {
-    "tincan": "^0.2.1"
+    "tincan": "^0.2.1",
+    "tincanjs": "^0.50.0"
   }
 }
