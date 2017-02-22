@@ -13,6 +13,8 @@
   "author": "Juan Miguel Navarro",
   "license": "ISC",
   "dependencies": {
+    "assert": "^1.4.1",
+    "mongodb": "^2.2.24",
     "tincan": "^0.2.1",
     "tincanjs": "^0.50.0"
   }

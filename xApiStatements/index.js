@@ -60,13 +60,36 @@ lrs.queryStatements(
             // TODO: do something with statements in data.statements
             //console.log(data.statements)
             //console.log(JSON.stringify(data.statements))
-
-            crearDB();
+            //drop la coleccion 'statements' si existe, para no duplicar datos cada vez que ejecuto el server
+            dropColleccion();
+            crearDB(data);
 
         }
     }
 );
+function dropColleccion(){
+    MongoClient.connect('mongodb://localhost:27017/lrs1', function(err, db) {  
+            assert.equal(null, err);
+            console.log("Successfully connected to MongoDB para borrar coleccion.");
+            //Borrar toda la coleccion, para no duplicar datos cada vez que arranca el server
+            db.dropCollection("statements", function(err, resp){
+                assert.equal(null, err);
+                console.log('coleccion borrada', resp);
+                db.close();
+            });
+        });//Fin de MongoClient.connect
 
-function crearDB(){
-    console.log('en funcion crear db')
 }
+
+function crearDB(data){
+        console.log('en funcion crear db')
+        MongoClient.connect('mongodb://localhost:27017/lrs1', function(err, db) {  
+            assert.equal(null, err);
+            console.log("Successfully connected to MongoDB.");
+            db.collection("statements").insertMany(data.statements, function(err, res) {
+                    console.log(res); 
+                    db.close();             
+            });
+        });//Fin de MongoClient.connect
+    
+}// Fin de function crearDB
