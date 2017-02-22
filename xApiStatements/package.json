@@ -1,0 +1,18 @@
+{
+  "name": "xapi_statements",
+  "version": "1.0.0",
+  "description": "Servidor que carga statements desde un LRS",
+  "main": "index.js",
+  "scripts": {
+    "test": "echo \"Error: no test specified\" && exit 1"
+  },
+  "keywords": [
+    "xApi",
+    "tincan"
+  ],
+  "author": "Juan Miguel Navarro",
+  "license": "ISC",
+  "dependencies": {
+    "tincan": "^0.2.1"
+  }
+}
