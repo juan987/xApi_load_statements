@@ -30,32 +30,19 @@ my_app.use(bodyParser.urlencoded({ extended: true })); // for parsing applicatio
 var routerRestPelis = express.Router();
 
 //Ruta para el http del autocomplete
-routerRestPelis.route("/peliculas/autocomplete/:text")
+routerRestPelis.route("/actor/autocomplete/:text")
         .get((request, response)=>{
 
             console.log('En GET DE autocomplete, patron de busqueda ' +request.params.text);
-            //Busqueda por reg expression solo por titulo
-            //Pelicula.find({titulo: new RegExp(request.params.text, 'i')}, (error,data)=>{
+            //Busqueda por reg expression solo por actor
+            mongoAutocomplete(request.params.text, response);
 
-            //Busqueda por titulo o por director
-            Pelicula.find({$or:[{titulo: new RegExp(request.params.text, 'i')},
-                            {director: new RegExp(request.params.text, 'i')}]}
-                                , (error,data)=>{
-                if(error) { 
-                    response.status(500).send('Autocomplete , Error en get de autocomplete');
-                    console.log('Estoy dentro del get del AUTOCOMPLETE, ERROR ' ,error);
-                }else{
-                    response.json(data)
-                    console.log('Estoy dentro del get del AUTOCOMPLETE, find de peliculas: ' ,data);
-                }
-
-            });//fin del find
 
         });//Fin del get de autocomplete/:text
 
 //Ruta para el http del autocomplete cuando no tiene patron de busqueda(:text)
 //Devuelve un array vacio
-routerRestPelis.route("/peliculas/autocomplete/")
+routerRestPelis.route("/actor/autocomplete/")
         .get((request, response)=>{
 
             console.log('En GET DE autocomplete, patron de busqueda undefined' +request.params.text);
@@ -63,7 +50,7 @@ routerRestPelis.route("/peliculas/autocomplete/")
                 //Devuelvo un array vacio
                 let data= [];
                 response.json(data)
-                console.log('Estoy dentro del get del AUTOCOMPLETE undefined, find de peliculas: ' ,data);
+                console.log('Estoy dentro del get del AUTOCOMPLETE undefined: ' ,data);
 
             //});//fin del get
 
@@ -75,6 +62,94 @@ my_app.use("/", routerRestPelis);
 http.listen(3000,()=>{
     console.log("Servidor de xAPI iniciado en *:3000");
 });
+
+
+//Funcion para buscar en mongo db con el AUTOCOMPLETE
+
+function mongoAutocomplete(text, response){
+    MongoClient.connect('mongodb://localhost:27017/lrs1', function(err, db) {
+
+        assert.equal(err, null);
+        console.log("Successfully connected to MongoDB autocomplete.");
+        
+        var query = queryDocument(text);
+        var projection = projectionDocument();
+
+        /*
+        app.get('/', function(req, res){
+        db.collection('movies').find({}).toArray(function(err, docs) {
+            res.render('movies', { 'movies': docs } );
+        });
+        */
+
+    // Peform a simple find and return all the documents
+    /*
+      collection.find({}, {skip:1, limit:1, fields:{b:1}}).toArray(function(err, docs) {
+        assert.equal(null, err);
+        assert.equal(1, docs.length);
+        assert.equal(null, docs[0].a);
+        assert.equal(2, docs[0].b);
+    */
+
+        db.collection('statements').find(query).project(projection).toArray(function(err, docs) {
+        //db.collection('statements').find().limit(10).project(projection).toArray(function(err, docs) {
+            if(err) { 
+                    response.status(500).send('Autocomplete , Error en get de autocomplete');
+                    console.log('Estoy dentro del get del AUTOCOMPLETE, ERROR ' ,error);
+                }else{
+                    response.json(docs)
+                    console.log('Estoy dentro del get del AUTOCOMPLETE, actors: ' ,docs);
+            }
+            return db.close();
+        });
+
+        /*
+        //ESte metodo es con un cursor explicito
+        var cursor = db.collection('statements').find(query);
+        cursor.project(projection);
+        
+        var numMatches = 0;
+
+        cursor.forEach(
+            function(doc) {
+                numMatches = numMatches + 1;
+                console.log( doc );
+            },
+            function(err) {
+                assert.equal(err, null);
+                console.log("Our query was:" + JSON.stringify(query));
+                console.log("Matching documents: " + numMatches);
+
+                return db.close();
+            }
+        );
+        */
+
+    });
+}//Fin de mongoAutocomplete
+
+
+
+//*******************************************************
+//Funciones para el autocomplete con regex
+function queryDocument(text) {
+    console.log('texto de busqueda autocomplete: ', text);
+    var query = {};
+    query = {"actor.name":{"$regex": text, "$options": "i"}};
+    console.log('query doc:  ', query);
+    return query;
+}
+
+
+function projectionDocument() {
+    var projection = {
+        "_id": 0,
+        "actor.name": 1,
+    };
+    return projection;
+}
+//Fin de Funciones para el autocomplete con regex
+//*******************************************************
 
 
 //**************************************************************************************

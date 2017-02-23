@@ -14,6 +14,8 @@
   "license": "ISC",
   "dependencies": {
     "assert": "^1.4.1",
+    "body-parser": "^1.16.1",
+    "express": "^4.14.1",
     "mongodb": "^2.2.24",
     "tincan": "^0.2.1",
     "tincanjs": "^0.50.0"
