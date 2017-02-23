@@ -29,6 +29,17 @@ my_app.use(bodyParser.urlencoded({ extended: true })); // for parsing applicatio
 //Crear variable para rutas
 var routerRestPelis = express.Router();
 
+//Ruta para el get del reporte tipo 1
+routerRestPelis.route("/reporte1")
+        .get((request, response)=>{
+
+            console.log('En GET DE reporte 1');
+            //Busqueda por reg expression solo por actor
+            mongoReporte1(request.params.text, response);
+
+
+        });//Fin del get de autocomplete/:text
+
 //Ruta para el http del autocomplete
 routerRestPelis.route("/actor/autocomplete/:text")
         .get((request, response)=>{
@@ -51,8 +62,6 @@ routerRestPelis.route("/actor/autocomplete/")
                 let data= [];
                 response.json(data)
                 console.log('Estoy dentro del get del AUTOCOMPLETE undefined: ' ,data);
-
-            //});//fin del get
 
         });//Fin del roter de autocomplete/:text             
 
@@ -193,7 +202,7 @@ catch (ex) {
     // TODO: do something with error, can't communicate with LRS
 }
 
-//Realizar una busqueda
+//Realizar una busqueda en learninglockers
 lrs.queryStatements(
     {
         params: {
