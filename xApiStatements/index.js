@@ -27,33 +27,29 @@ my_app.use(bodyParser.urlencoded({ extended: true })); // for parsing applicatio
 //Server http para mongodb
 
 //Crear variable para rutas
-var routerRestPelis = express.Router();
+var routerRest = express.Router();
 
-//Ruta para el get del reporte tipo 1
-routerRestPelis.route("/reporte1")
-        .get((request, response)=>{
-
-            console.log('En GET DE reporte 1');
-            //Busqueda por reg expression solo por actor
-            mongoReporte1(request.params.text, response);
-
-
-        });//Fin del get de autocomplete/:text
+//Ruta para el post del reporte tipo 1, le llega el json con los parametros
+routerRest.route("/reporte1")
+        .post((request, response)=>{
+            console.log('En post DE reporte 1');
+            console.log("Post: leo todo el json de l request de report1" ,request.body);
+            //console.log("Post: solo leo un dato del json  " ,request.body.dato);
+            mongoReporte1(request.body, response);
+});
 
 //Ruta para el http del autocomplete
-routerRestPelis.route("/actor/autocomplete/:text")
+routerRest.route("/actor/autocomplete/:text")
         .get((request, response)=>{
 
             console.log('En GET DE autocomplete, patron de busqueda ' +request.params.text);
             //Busqueda por reg expression solo por actor
             mongoAutocomplete(request.params.text, response);
-
-
-        });//Fin del get de autocomplete/:text
+});//Fin del get de autocomplete/:text
 
 //Ruta para el http del autocomplete cuando no tiene patron de busqueda(:text)
 //Devuelve un array vacio
-routerRestPelis.route("/actor/autocomplete/")
+routerRest.route("/actor/autocomplete/")
         .get((request, response)=>{
 
             console.log('En GET DE autocomplete, patron de busqueda undefined' +request.params.text);
@@ -65,16 +61,41 @@ routerRestPelis.route("/actor/autocomplete/")
 
         });//Fin del roter de autocomplete/:text             
 
-my_app.use("/", routerRestPelis);
+my_app.use("/", routerRest);
 
 
 http.listen(3000,()=>{
     console.log("Servidor de xAPI iniciado en *:3000");
 });
 
+//Funcion para obtener el reporte 1 en MongoDB
+function mongoReporte1(body, response){
+    MongoClient.connect('mongodb://localhost:27017/lrs1', (err, db) => {
+        assert.equal(err,null);
+        console.log('en mongoReporte1, recibido :', body);
+        //Construccion del query document
+        var query = {};
+        query = {"actor.name":body.name};
+        //Construccion del projection document
+        var projection = {"_id": 0, "originalJSON": 1};
+        db.collection('statements').find(query).project(projection).toArray(function(err, docs) {
+        //db.collection('statements').find().limit(10).project(projection).toArray(function(err, docs) {
+            if(err) { 
+                    response.status(500).send('Autocomplete , Error en get de autocomplete');
+                    console.log('Estoy dentro del get del AUTOCOMPLETE, ERROR ' ,err);
+                }else{
+                    response.json(docs)
+                    console.log('Estoy dentro del get del AUTOCOMPLETE, actors: ' ,docs);
+            }
+            return db.close();
+        });//Cierre de toArray
+
+
+    });//Fin de MongoClient.connect
+
+}//Fin de mongoReporte1
 
 //Funcion para buscar en mongo db con el AUTOCOMPLETE
-
 function mongoAutocomplete(text, response){
     MongoClient.connect('mongodb://localhost:27017/lrs1', function(err, db) {
 
@@ -104,10 +125,11 @@ function mongoAutocomplete(text, response){
         //db.collection('statements').find().limit(10).project(projection).toArray(function(err, docs) {
             if(err) { 
                     response.status(500).send('Autocomplete , Error en get de autocomplete');
-                    console.log('Estoy dentro del get del AUTOCOMPLETE, ERROR ' ,error);
+                    console.log('Estoy dentro del get del AUTOCOMPLETE, ERROR ' ,err);
                 }else{
                     response.json(docs)
                     console.log('Estoy dentro del get del AUTOCOMPLETE, actors: ' ,docs);
+                    //Docs es un array con los datos segun la projection, que aqui solo son los nombres de los actors
             }
             return db.close();
         });
