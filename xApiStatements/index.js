@@ -38,11 +38,12 @@ routerRest.route("/reporte1")
             mongoReporte1(request.body, response);
 });
 
-//Ruta para el http del autocomplete
+//**************************************************************************************
+//Ruta para el http del autocomplete de nombre
 routerRest.route("/actor/autocomplete/:text")
         .get((request, response)=>{
 
-            console.log('En GET DE autocomplete, patron de busqueda ' +request.params.text);
+            console.log('En GET DE autocomplete de nombre, patron de busqueda ' +request.params.text);
             //Busqueda por reg expression solo por actor
             mongoAutocomplete(request.params.text, response);
 });//Fin del get de autocomplete/:text
@@ -52,14 +53,41 @@ routerRest.route("/actor/autocomplete/:text")
 routerRest.route("/actor/autocomplete/")
         .get((request, response)=>{
 
-            console.log('En GET DE autocomplete, patron de busqueda undefined' +request.params.text);
+            console.log('En GET DE autocomplete, patron de busqueda de nombres undefined' +request.params.text);
 
                 //Devuelvo un array vacio
                 let data= [];
                 response.json(data)
-                console.log('Estoy dentro del get del AUTOCOMPLETE undefined: ' ,data);
+                console.log('Estoy dentro del get del AUTOCOMPLETE nombres undefined: ' ,data);
 
-        });//Fin del roter de autocomplete/:text             
+        });//Fin del roter de autocomplete de nombre
+//**************************************************************************************
+
+//**************************************************************************************
+//Ruta para el http del autocomplete de verbo
+routerRest.route("/actor/autocompleteverbos/:text")
+        .get((request, response)=>{
+
+            console.log('En GET DE autocomplete de verbos, patron de busqueda ' +request.params.text);
+            //Busqueda por reg expression solo por actor
+            mongoAutocompleteVerbo(request.params.text, response);
+});//Fin del get de autocomplete/:text
+
+//Ruta para el http del autocomplete cuando no tiene patron de busqueda(:text)
+//Devuelve un array vacio
+routerRest.route("/actor/autocompleteverbos/")
+        .get((request, response)=>{
+
+            console.log('En GET DE autocomplete de verbos, patron de busqueda undefined' +request.params.text);
+
+                //Devuelvo un array vacio
+                let data= [];
+                response.json(data)
+                console.log('Estoy dentro del get del AUTOCOMPLETE undefined de verbos: ' ,data);
+
+        });//Fin del roter de autocomplete/:text
+//**************************************************************************************
+             
 
 my_app.use("/", routerRest);
 
@@ -95,7 +123,7 @@ function mongoReporte1(body, response){
 
 }//Fin de mongoReporte1
 
-//Funcion para buscar en mongo db con el AUTOCOMPLETE
+//Funcion para buscar en mongo db con el AUTOCOMPLETE de nombre
 function mongoAutocomplete(text, response){
     MongoClient.connect('mongodb://localhost:27017/lrs1', function(err, db) {
 
@@ -157,17 +185,44 @@ function mongoAutocomplete(text, response){
         */
 
     });
-}//Fin de mongoAutocomplete
+}//Fin de mongoAutocomplete de nombre
+
+//Funcion para buscar en mongo db con el AUTOCOMPLETE de verbo
+function mongoAutocompleteVerbo(text, response){
+    MongoClient.connect('mongodb://localhost:27017/lrs1', function(err, db) {
+
+        assert.equal(err, null);
+        console.log("Successfully connected to MongoDB autocomplete verbo.");
+        
+        var query = {"verb.id":{"$regex": text, "$options": "i"}};
+        console.log('query de verbo: ', query);
+        var projection = { "_id": 0,"verb.id": 1,};
+        console.log('projection de verbo: ', projection);
 
 
+        db.collection('statements').find(query).project(projection).toArray(function(err, docs) {
+        //db.collection('statements').find().limit(10).project(projection).toArray(function(err, docs) {
+            if(err) { 
+                    response.status(500).send('Autocomplete verbos, Error en get de autocomplete');
+                    console.log('Estoy dentro del get del AUTOCOMPLETE verbos, ERROR ' ,err);
+                }else{
+                    response.json(docs)
+                    console.log('Estoy dentro del get del AUTOCOMPLETE, verbos: ' ,docs);
+                    //Docs es un array con los datos segun la projection, que aqui solo son los nombres de los actors
+            }
+            return db.close();
+        });
+
+    });
+}//Fin de mongoAutocomplete de verbo
 
 //*******************************************************
-//Funciones para el autocomplete con regex
+//Funciones para el autocomplete con regex para nombre
 function queryDocument(text) {
     console.log('texto de busqueda autocomplete: ', text);
     var query = {};
     query = {"actor.name":{"$regex": text, "$options": "i"}};
-    console.log('query doc:  ', query);
+    console.log('query doc nombre:  ', query);
     return query;
 }
 
@@ -227,21 +282,34 @@ catch (ex) {
 //Realizar una busqueda en learninglockers
 lrs.queryStatements(
     {
+        /*
         params: {
             
             verb: new TinCan.Verb(
                 {
                     id: "http://adlnet.gov/expapi/verbs/experienced"
                 }
-            ),
+            ), 
             
             //since: "2017-01-02T08:34:16Z"
-        },
+        }, */
+                    //since: "2016-01-02T08:34:16Z",
+                    //ascending: true
+
+        params: {
+                    until: "2018-01-02T08:34:16Z",
+                    /*verb: new TinCan.Verb(
+                        {
+                            id: "http://adlnet.gov/expapi/verbs/experienced"
+                        }
+                    ),*/ 
+               },
+
         callback: function (err, data) {
             if (err !== null) {
                 console.log("Failed to query statements: " + err);
                 // TODO: do something with error, didn't get statements
-                //return;
+                return;
             }
 
             if (data.more !== null) {
@@ -250,17 +318,27 @@ lrs.queryStatements(
 
             //console.log(data);
             console.log('juan');
+            //console.log('en callback de lrs.querystatements, data: ', data.statements)
+            
+            //prueba para ver el error este de mongo db:
+            //Error: key http://id.tincanapi.com/extension/attempt-id must not contain '.'
+            
+            data.statements.forEach(function(current_value) {
+                    //console.log(current_value.context);
+                    console.log(current_value.context.extensions);
+            });
+            
 
             // TODO: do something with statements in data.statements
             //console.log(data.statements)
             //console.log(JSON.stringify(data.statements))
 
             //drop la coleccion 'statements' si existe, para no duplicar datos cada vez que ejecuto el server
-            dropColleccion();
+            //dropColleccion();
 
             //Crea la db actualizada con todos los statements cada vez que arranca el servidor.
             //Tiene que estar corriendo apache y la app learninglocker
-            crearDB(data);
+            //crearDB(data.statements);
 
         }
     }
@@ -280,12 +358,13 @@ function dropColleccion(){
 }
 
 function crearDB(data){
-        console.log('en funcion crear db')
+        //console.log('en funcion crear db, data: ', data)
         MongoClient.connect('mongodb://localhost:27017/lrs1', function(err, db) {  
             assert.equal(null, err);
             console.log("Successfully connected to MongoDB.");
-            db.collection("statements").insertMany(data.statements, function(err, res) {
-                    console.log(res); 
+            db.collection("statements").insertMany(data, function(err, res) {
+                    console.log('resultado de la insercion en mongo db si hay error', err); 
+                    console.log('resultado de la insercion en mongo db', res); 
                     db.close();             
             });
         });//Fin de MongoClient.connect
