@@ -133,6 +133,32 @@ function mongoAutocomplete(text, response){
         var query = queryDocument(text);
         var projection = projectionDocument();
 
+        //Autocomplete con aggregation
+                    var collectionItem = db.collection('statements');
+
+                    collectionItem.aggregate([
+                        {   $match: query
+                        },
+                        { $group: {
+                                _id: "$actor.name",
+                            num: { $sum: 1 }
+                        } },
+                        { $sort: { _id: 1 } }
+                    ],
+                    function(err, docs) {
+                        if(err) { 
+                                response.status(500).send('Autocomplete , Error en get de autocomplete');
+                                console.log('Estoy dentro del get del AUTOCOMPLETE, ERROR ' ,err);
+                            }else{
+                                response.json(docs)
+                                console.log('Estoy dentro del get del AUTOCOMPLETE, actors: ' ,docs);
+                                //Docs es un array con los datos segun la projection, que aqui solo son los nombres de los actors
+                        }
+                        return db.close();
+                    });
+
+        //FIN de autocomplete con aggregation
+
         /*
         app.get('/', function(req, res){
         db.collection('movies').find({}).toArray(function(err, docs) {
@@ -149,6 +175,8 @@ function mongoAutocomplete(text, response){
         assert.equal(2, docs[0].b);
     */
 
+        /*   27-2-17
+        //Find para el autocomplete
         db.collection('statements').find(query).project(projection).toArray(function(err, docs) {
         //db.collection('statements').find().limit(10).project(projection).toArray(function(err, docs) {
             if(err) { 
@@ -160,7 +188,8 @@ function mongoAutocomplete(text, response){
                     //Docs es un array con los datos segun la projection, que aqui solo son los nombres de los actors
             }
             return db.close();
-        });
+        });//Fin del find para el autocomplete
+        */
 
         /*
         //ESte metodo es con un cursor explicito
@@ -296,8 +325,8 @@ lrs.queryStatements(
                     //since: "2016-01-02T08:34:16Z",
                     //ascending: true
 
-        params: {
-                    until: "2018-01-02T08:34:16Z",
+        params: {//no envio parametros, por ahora
+                    //until: "2018-01-02T08:34:16Z",
                     /*verb: new TinCan.Verb(
                         {
                             id: "http://adlnet.gov/expapi/verbs/experienced"
@@ -307,17 +336,18 @@ lrs.queryStatements(
 
         callback: function (err, data) {
             if (err !== null) {
+                // do something with error, didn't get statements
                 console.log("Failed to query statements: " + err);
-                // TODO: do something with error, didn't get statements
                 return;
             }
 
             if (data.more !== null) {
                 // TODO: additional page(s) of statements should be fetched
+                console.log('hay mas datos en el lrs, data more !== null: ', data.more);
             }
 
             //console.log(data);
-            console.log('juan');
+            console.log('juan en metodo lrs.queryStatements');
             //console.log('en callback de lrs.querystatements, data: ', data.statements)
             
             //prueba para ver el error este de mongo db:
@@ -325,7 +355,36 @@ lrs.queryStatements(
             
             data.statements.forEach(function(current_value) {
                     //console.log(current_value.context);
-                    console.log(current_value.context.extensions);
+                    //console.log(current_value.context.extensions);
+                    //muestra los current_value.context.extensions distintos de null
+                    if(current_value.context.extensions !== null){
+                        /* Original, lo cambio por la funcion function cambiarPuntos(string_uri)
+                       console.log(current_value.context.extensions);
+                       //recupero la clave con puntos
+                       console.log('json stringify',JSON.stringify(current_value.context.extensions));  
+                       console.log('json parse',JSON.parse(JSON.stringify(current_value.context.extensions)));
+                       let string_uri =  JSON.stringify(current_value.context.extensions);
+                       console.log('la extension como string: ', string_uri);
+                       //sustituir los puntos por &40
+                       let claveSinPuntos = string_uri.replace(/[.]/g, "&40");
+                       console.log('stringUriSinPuntos: ', claveSinPuntos);
+                       let parseObject = JSON.parse(claveSinPuntos);
+                       //Reescribe el objeto current_value.context.extensions con &40 en vez de puntos
+                       current_value.context.extensions = parseObject;
+                       console.log('objeto current_value.context.extensions con &40 en vez de puntos',current_value.context.extensions);
+                       */
+
+                       console.log(current_value.context.extensions);
+                       current_value.context.extensions = reemplazarPuntos(JSON.stringify(current_value.context.extensions))
+                       console.log('objeto current_value.context.extensions con &40 en vez de puntos',current_value.context.extensions);
+                    }// fin de if(current_value.context.extensions
+                    if(current_value.result !== null){//verifica que la clave result existe
+                        if(current_value.result.extensions !== null){
+                            console.log(current_value.result.extensions);
+                            current_value.result.extensions = reemplazarPuntos(JSON.stringify(current_value.result.extensions))
+                            console.log('objeto current_value.result.extensions con &40 en vez de puntos',current_value.result.extensions);
+                        }
+                    }
             });
             
 
@@ -343,6 +402,15 @@ lrs.queryStatements(
         }
     }
 );
+
+//funcion para quitar puntos de las claves que los contenga en el statement recibido del LRS
+//recibe el objeto que tiene la key con puntos como un string y lo devuelve como un objeto
+//json cuya clave tiene &40 en vez de puntos.
+function reemplazarPuntos(string_uri){
+    let claveSinPuntos = string_uri.replace(/[.]/g, "&40");
+    return JSON.parse(claveSinPuntos);
+}
+
 function dropColleccion(){
     MongoClient.connect('mongodb://localhost:27017/lrs1', function(err, db) {  
             assert.equal(null, err);
