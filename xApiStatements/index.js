@@ -38,6 +38,14 @@ routerRest.route("/reporte1")
             mongoReporte1(request.body, response);
 });
 
+//Ruta para el get de la colleccion actors
+routerRest.route("/collection/actor")
+        .get((request, response)=>{
+            console.log('En get de collection Actor');
+            //console.log("Post: solo leo un dato del json  " ,request.body.dato);
+            mongoGetCollectionActor(response);
+});
+
 //**************************************************************************************
 //Ruta para el http del autocomplete de nombre
 routerRest.route("/actor/autocomplete/:text")
@@ -96,6 +104,31 @@ http.listen(3000,()=>{
     console.log("Servidor de xAPI iniciado en *:3000");
 });
 
+
+function mongoGetCollectionActor(response){
+        MongoClient.connect('mongodb://localhost:27017/lrs1', (err, db) => {
+        assert.equal(err,null);
+        console.log('en mongoGetCollectionActor');
+        //Construccion del query document
+        var query = {};
+        //Construccion del projection document
+        var projection = {"_id": 0, "actor": 1};
+        db.collection('actors').find(query).project(projection).toArray(function(err, docs) {
+        //db.collection('statements').find().limit(10).project(projection).toArray(function(err, docs) {
+            if(err) { 
+                    response.status(500).send('mongoGetCollectionActor , Error en get de autocomplete');
+                    console.log('Estoy dentro del get del mongoGetCollectionActor, ERROR ' ,err);
+                }else{
+                    response.json(docs)
+                    console.log('Estoy dentro del get del mongoGetCollectionActor, actors: ' ,docs);
+            }
+            return db.close();
+        });//Cierre de toArray
+    });//Fin de MongoClient.connect
+}//Fin de funcion mongoGetCollectionActor
+
+
+
 //Funcion para obtener el reporte 1 en MongoDB
 function mongoReporte1(body, response){
     MongoClient.connect('mongodb://localhost:27017/lrs1', (err, db) => {
@@ -117,8 +150,6 @@ function mongoReporte1(body, response){
             }
             return db.close();
         });//Cierre de toArray
-
-
     });//Fin de MongoClient.connect
 
 }//Fin de mongoReporte1
@@ -470,7 +501,7 @@ function crearDB(data){
                     dbCrearColeccionDeActors();
                       dropColleccionVerbos();
                     dbCrearColeccionDeVerbs();
-                    crearColeccionDeObjects(); 
+                    //crearColeccionDeObjects(); 
                     db.close();             
             });
         });//Fin de MongoClient.connect
@@ -578,13 +609,13 @@ function crearColeccionDeObjects(){
         var collectionItem = db.collection('statements');
         collectionItem.aggregate([
                 { $group: {
-                    _id: {objeto:"$object"},
+                    _id: {miObjeto:"$object"},
                     num: { $sum: 1 }
                 } },
                 { $sort: { _id: 1 } },
                 {
                     $project:{
-                        _id:0, objeto:"$_id.objeto" 
+                        _id:0, objeto:"$_id.miObjeto" 
                     }
                 }
             ],
@@ -595,7 +626,7 @@ function crearColeccionDeObjects(){
                 }else{
                     console.log('coleccion de objetos: ' ,docs);
                     //Crear coleccion de actors
-                    let collectionActors = db.collection('objetos');
+                    let collectionActors = db.collection('misobjetos');
                     collectionActors.insertMany(docs, function(err, res){
                         assert.equal(null, err);
                         console.log('coleccion de objetos creada: ', res)
