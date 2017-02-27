@@ -466,8 +466,9 @@ function crearDB(data){
             db.collection("statements").insertMany(data, function(err, res) {
                     console.log('resultado de la insercion en mongo db si hay error', err); 
                     console.log('resultado de la insercion en mongo db', res);
-                    dropColleccionActors();
+                      dropColleccionActors();
                     dbCrearColeccionDeActors();
+                      dropColleccionVerbos();
                     dbCrearColeccionDeVerbs();
                     crearColeccionDeObjects(); 
                     db.close();             
@@ -487,45 +488,87 @@ function dropColleccionActors(){
             });
         });//Fin de MongoClient.connect
 
-}
+}//Fin de dropColleccionActors
 function dbCrearColeccionDeActors(){
-            MongoClient.connect('mongodb://localhost:27017/lrs1', function(err, db) {  
+    MongoClient.connect('mongodb://localhost:27017/lrs1', function(err, db) {  
+        assert.equal(null, err);
+        console.log("Successfully connected to MongoDB en dbCrearColeccionDeActors.");
+        var collectionItem = db.collection('statements');
+        collectionItem.aggregate([
+                { $group: {
+                    _id: {actor:"$actor"},
+                    num: { $sum: 1 }
+                } },
+                { $sort: { _id: 1 } },
+                {
+                    $project:{
+                        _id:0, actor:"$_id.actor" 
+                    }
+                }
+            ],
+            function(err, docs) {//callback del aggregate
                 assert.equal(null, err);
-                console.log("Successfully connected to MongoDB en dbCrearColeccionDeActors.");
-                var collectionItem = db.collection('statements');
-                collectionItem.aggregate([
-                        { $group: {
-                                _id: {actor:"$actor"},
-                            num: { $sum: 1 }
-                        } },
-                        { $sort: { _id: 1 } },
-                        {
-                            $project:{
-                                _id:0, actor:"$_id.actor" 
-                            }
-                        }
-                    ],
-                    function(err, docs) {//callback del aggregate
+                if(err) { 
+                    console.log('Estoy dentro del get del callback de drear coleccion de actors, ERROR ' ,err);
+                }else{
+                    console.log('coleccion de actores: ' ,docs);
+                    //Crear coleccion de actors
+                    let collectionActors = db.collection('actors');
+                    collectionActors.insertMany(docs, function(err, res){
                         assert.equal(null, err);
-                        if(err) { 
-                            console.log('Estoy dentro del get del AUTOCOMPLETE verbos, ERROR ' ,err);
-                        }else{
-                            console.log('coleccion de actores: ' ,docs);
-                            //Crear coleccion de actors
-                            let collectionActors = db.collection('actors');
-                            collectionActors.insertMany(docs, function(err, res){
-                                assert.equal(null, err);
-                                console.log('coleccion de actores creada: ', res)
-                            });
-                            //Docs es un array con los datos segun la projection, que aqui es el campo actor
-                        }
-                    db.close();
-                });//Fin de aggregate
-            });//Fin de  MongoClient.connect
+                        console.log('coleccion de actores creada: ', res)
+                    });
+                }
+            db.close();
+        });//Fin de aggregate
+    });//Fin de  MongoClient.connect
 }//Fin de funcion dbCrearColeccionDeActors
+function dropColleccionVerbos(){
+    MongoClient.connect('mongodb://localhost:27017/lrs1', function(err, db) {  
+            assert.equal(null, err);
+            console.log("Successfully connected to MongoDB para borrar coleccion de verbos.");
+            //Borrar toda la coleccion, para no duplicar datos cada vez que arranca el server
+            db.dropCollection("verbos", function(err, resp){
+                assert.equal(null, err);
+                console.log('coleccion de verbos borrada', resp);
+                db.close();
+            });
+        });//Fin de MongoClient.connect
 
+}
 function dbCrearColeccionDeVerbs(){
-    console.log('en funcion dbCrearColeccionDeVerbs');
+    MongoClient.connect('mongodb://localhost:27017/lrs1', function(err, db) {  
+        assert.equal(null, err);
+        console.log("Successfully connected to MongoDB en dbCrearColeccionDeVerbs.");
+        var collectionItem = db.collection('statements');
+        collectionItem.aggregate([
+                { $group: {
+                    _id: {verbo:"$verb"},
+                    num: { $sum: 1 }
+                } },
+                { $sort: { _id: 1 } },
+                {
+                    $project:{
+                        _id:0, verbo:"$_id.verbo" 
+                    }
+                }
+            ],
+            function(err, docs) {//callback del aggregate
+                assert.equal(null, err);
+                if(err) { 
+                    console.log('Estoy dentro del get del callback de drear coleccion de verbos, ERROR ' ,err);
+                }else{
+                    console.log('coleccion de verbos: ' ,docs);
+                    //Crear coleccion de actors
+                    let collectionActors = db.collection('verbos');
+                    collectionActors.insertMany(docs, function(err, res){
+                        assert.equal(null, err);
+                        console.log('coleccion de verbos creada: ', res)
+                    });
+                }
+            db.close();
+        });//Fin de aggregate
+    });//Fin de  MongoClient.connect
 }//Fin de funcion dbCrearColeccionDeVerbs
 
 function crearColeccionDeObjects(){
