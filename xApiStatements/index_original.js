@@ -176,7 +176,7 @@ function mongoAutocomplete(text, response){
     */
 
         /*   27-2-17
-        //Find para el autocomplete original
+        //Find para el autocomplete
         db.collection('statements').find(query).project(projection).toArray(function(err, docs) {
         //db.collection('statements').find().limit(10).project(projection).toArray(function(err, docs) {
             if(err) { 
@@ -228,7 +228,7 @@ function mongoAutocompleteVerbo(text, response){
         var projection = { "_id": 0,"verb.id": 1,};
         console.log('projection de verbo: ', projection);
 
-        /*
+
         db.collection('statements').find(query).project(projection).toArray(function(err, docs) {
         //db.collection('statements').find().limit(10).project(projection).toArray(function(err, docs) {
             if(err) { 
@@ -241,39 +241,6 @@ function mongoAutocompleteVerbo(text, response){
             }
             return db.close();
         });
-        */
-
-        //Autocomplete con aggregation
-                    var collectionItem = db.collection('statements');
-
-                    collectionItem.aggregate([
-                        {   $match: query
-                        },
-                        { $group: {
-                                _id: {verbo:"$verb.id"},
-                            num: { $sum: 1 }
-                        } },
-                        { $sort: { _id: 1 } },
-                        {
-                          $project:{
-                              _id:0, verbo:"$_id.verbo" 
-                            }
-                        }
-
-                    ],
-                    function(err, docs) {
-                        if(err) { 
-                                response.status(500).send('Autocomplete verbos, Error en get de autocomplete');
-                                console.log('Estoy dentro del get del AUTOCOMPLETE verbos, ERROR ' ,err);
-                            }else{
-                                response.json(docs)
-                                console.log('Estoy dentro del get del AUTOCOMPLETE, verbos: ' ,docs);
-                                //Docs es un array con los datos segun la projection, que aqui solo son los nombres de los actors
-                        }
-                        return db.close();
-                    });
-
-        //FIN de autocomplete con aggregation
 
     });
 }//Fin de mongoAutocomplete de verbo
@@ -426,11 +393,11 @@ lrs.queryStatements(
             //console.log(JSON.stringify(data.statements))
 
             //drop la coleccion 'statements' si existe, para no duplicar datos cada vez que ejecuto el server
-            dropColleccion();
+            //dropColleccion();
 
             //Crea la db actualizada con todos los statements cada vez que arranca el servidor.
             //Tiene que estar corriendo apache y la app learninglocker
-            crearDB(data.statements);
+            //crearDB(data.statements);
 
         }
     }
@@ -465,69 +432,10 @@ function crearDB(data){
             console.log("Successfully connected to MongoDB.");
             db.collection("statements").insertMany(data, function(err, res) {
                     console.log('resultado de la insercion en mongo db si hay error', err); 
-                    console.log('resultado de la insercion en mongo db', res);
-                    dropColleccionActors();
-                    dbCrearColeccionDeActors();
-                    dbCrearColeccionDeVerbs();
-                    crearColeccionDeObjects(); 
+                    console.log('resultado de la insercion en mongo db', res); 
                     db.close();             
             });
         });//Fin de MongoClient.connect
     
 }// Fin de function crearDB
-function dropColleccionActors(){
-    MongoClient.connect('mongodb://localhost:27017/lrs1', function(err, db) {  
-            assert.equal(null, err);
-            console.log("Successfully connected to MongoDB para borrar coleccion de actors.");
-            //Borrar toda la coleccion, para no duplicar datos cada vez que arranca el server
-            db.dropCollection("actors", function(err, resp){
-                assert.equal(null, err);
-                console.log('coleccion de Actors borrada', resp);
-                db.close();
-            });
-        });//Fin de MongoClient.connect
 
-}
-function dbCrearColeccionDeActors(){
-            MongoClient.connect('mongodb://localhost:27017/lrs1', function(err, db) {  
-                assert.equal(null, err);
-                console.log("Successfully connected to MongoDB en dbCrearColeccionDeActors.");
-                var collectionItem = db.collection('statements');
-                collectionItem.aggregate([
-                        { $group: {
-                                _id: {actor:"$actor"},
-                            num: { $sum: 1 }
-                        } },
-                        { $sort: { _id: 1 } },
-                        {
-                            $project:{
-                                _id:0, actor:"$_id.actor" 
-                            }
-                        }
-                    ],
-                    function(err, docs) {//callback del aggregate
-                        assert.equal(null, err);
-                        if(err) { 
-                            console.log('Estoy dentro del get del AUTOCOMPLETE verbos, ERROR ' ,err);
-                        }else{
-                            console.log('coleccion de actores: ' ,docs);
-                            //Crear coleccion de actors
-                            let collectionActors = db.collection('actors');
-                            collectionActors.insertMany(docs, function(err, res){
-                                assert.equal(null, err);
-                                console.log('coleccion de actores creada: ', res)
-                            });
-                            //Docs es un array con los datos segun la projection, que aqui es el campo actor
-                        }
-                    db.close();
-                });//Fin de aggregate
-            });//Fin de  MongoClient.connect
-}//Fin de funcion dbCrearColeccionDeActors
-
-function dbCrearColeccionDeVerbs(){
-    console.log('en funcion dbCrearColeccionDeVerbs');
-}//Fin de funcion dbCrearColeccionDeVerbs
-
-function crearColeccionDeObjects(){
-    console.log('en funcion crearColeccionDeObjects');
-}//Fin de funcion crearColeccionDeObjects
