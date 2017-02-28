@@ -46,6 +46,13 @@ routerRest.route("/collection/actor")
             mongoGetCollectionActor(response);
 });
 
+//Ruta para el get de la colleccion verbs
+routerRest.route("/collection/verb")
+        .get((request, response)=>{
+            console.log('En get de collection verbs');
+            mongoGetCollectionVerb(response);
+});
+
 //**************************************************************************************
 //Ruta para el http del autocomplete de nombre
 routerRest.route("/actor/autocomplete/:text")
@@ -105,6 +112,28 @@ http.listen(3000,()=>{
 });
 
 
+function mongoGetCollectionVerb(response){
+        MongoClient.connect('mongodb://localhost:27017/lrs1', (err, db) => {
+        assert.equal(err,null);
+        console.log('en mongoGetCollectionVerb');
+        //Construccion del query document
+        var query = {};
+        //Construccion del projection document
+        var projection = {"_id": 0, "verbo": 1};
+        db.collection('verbos').find(query).project(projection).toArray(function(err, docs) {
+        //db.collection('statements').find().limit(10).project(projection).toArray(function(err, docs) {
+            if(err) { 
+                    response.status(500).send('mongoGetCollectionActor , Error en get de autocomplete');
+                    console.log('Estoy dentro del get del mongoGetCollectionVerb, ERROR ' ,err);
+                }else{
+                    response.json(docs)
+                    console.log('Estoy dentro del get del mongoGetCollectionVerb, verbos: ' ,docs);
+            }
+            return db.close();
+        });//Cierre de toArray
+    });//Fin de MongoClient.connect
+}//Fin de funcion mongoGetCollectionVerb
+
 function mongoGetCollectionActor(response){
         MongoClient.connect('mongodb://localhost:27017/lrs1', (err, db) => {
         assert.equal(err,null);
@@ -126,8 +155,6 @@ function mongoGetCollectionActor(response){
         });//Cierre de toArray
     });//Fin de MongoClient.connect
 }//Fin de funcion mongoGetCollectionActor
-
-
 
 //Funcion para obtener el reporte 1 en MongoDB
 function mongoReporte1(body, response){
