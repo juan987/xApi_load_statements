@@ -742,6 +742,7 @@ function crearColeccionDeTargetsWithParentField(){
                 }
             ],*/
         collectionItem.aggregate([
+                //{$unwind:"$context.contextActivities.parent"},  //Con esto, no se insertan los targets raices
                 { $group: {
                     _id: {miObjeto:"$target", parent:"$context.contextActivities.parent.id"},
                     num: { $sum: 1 }
