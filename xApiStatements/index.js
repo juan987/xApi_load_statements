@@ -501,7 +501,8 @@ function crearDB(data){
                     dbCrearColeccionDeActors();
                       dropColleccionVerbos();
                     dbCrearColeccionDeVerbs();
-                    //crearColeccionDeObjects(); 
+                      dropColleccionTargets();
+                    crearColeccionDeTargets(); 
                     db.close();             
             });
         });//Fin de MongoClient.connect
@@ -602,14 +603,28 @@ function dbCrearColeccionDeVerbs(){
     });//Fin de  MongoClient.connect
 }//Fin de funcion dbCrearColeccionDeVerbs
 
-function crearColeccionDeObjects(){
+function dropColleccionTargets(){
+    MongoClient.connect('mongodb://localhost:27017/lrs1', function(err, db) {  
+            assert.equal(null, err);
+            console.log("Successfully connected to MongoDB para borrar coleccion de targets.");
+            //Borrar toda la coleccion, para no duplicar datos cada vez que arranca el server
+            db.dropCollection("targets", function(err, resp){
+                assert.equal(null, err);
+                console.log('coleccion de targets borrada', resp);
+                db.close();
+            });
+        });//Fin de MongoClient.connect
+
+}
+
+function crearColeccionDeTargets(){
     MongoClient.connect('mongodb://localhost:27017/lrs1', function(err, db) {  
         assert.equal(null, err);
-        console.log("Successfully connected to MongoDB en crearColeccionDeObjects.");
+        console.log("Successfully connected to MongoDB en crearColeccionDeTargets.");
         var collectionItem = db.collection('statements');
         collectionItem.aggregate([
                 { $group: {
-                    _id: {miObjeto:"$object"},
+                    _id: {miObjeto:"$target"},
                     num: { $sum: 1 }
                 } },
                 { $sort: { _id: 1 } },
@@ -622,14 +637,14 @@ function crearColeccionDeObjects(){
             function(err, docs) {//callback del aggregate
                 assert.equal(null, err);
                 if(err) { 
-                    console.log('Estoy dentro del get del callback de crear coleccion de objetos, ERROR ' ,err);
+                    console.log('Estoy dentro del get del callback de crear coleccion de targets, ERROR ' ,err);
                 }else{
-                    console.log('coleccion de objetos: ' ,docs);
+                    console.log('coleccion de targets: ' ,docs);
                     //Crear coleccion de actors
-                    let collectionActors = db.collection('misobjetos');
+                    let collectionActors = db.collection('targets');
                     collectionActors.insertMany(docs, function(err, res){
                         assert.equal(null, err);
-                        console.log('coleccion de objetos creada: ', res)
+                        console.log('coleccion de objetos targets: ', res)
                     });
                 }
             db.close();
