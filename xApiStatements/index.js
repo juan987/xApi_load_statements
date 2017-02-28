@@ -53,6 +53,13 @@ routerRest.route("/collection/verb")
             mongoGetCollectionVerb(response);
 });
 
+//Ruta para el get de la colleccion targets
+routerRest.route("/collection/target")
+        .get((request, response)=>{
+            console.log('En get de collection targets');
+            mongoGetCollectionTarget(response);
+});
+
 //**************************************************************************************
 //Ruta para el http del autocomplete de nombre
 routerRest.route("/actor/autocomplete/:text")
@@ -111,6 +118,26 @@ http.listen(3000,()=>{
     console.log("Servidor de xAPI iniciado en *:3000");
 });
 
+function mongoGetCollectionTarget(response){
+        MongoClient.connect('mongodb://localhost:27017/lrs1', (err, db) => {
+        assert.equal(err,null);
+        console.log('en mongoGetCollectionTarget');
+        //Construccion del query document
+        var query = {};
+        //Construccion del projection document
+        var projection = {"_id": 0, "objeto": 1};
+        db.collection('targets').find(query).project(projection).toArray(function(err, docs) {
+            if(err) { 
+                    response.status(500).send('mongoGetCollectionTarget , Error en get de autocomplete');
+                    console.log('Estoy dentro del get del mongoGetCollectionTarget, ERROR ' ,err);
+                }else{
+                    response.json(docs)
+                    console.log('Estoy dentro del get del mongoGetCollectionTarget, verbos: ' ,docs);
+            }
+            return db.close();
+        });//Cierre de toArray
+    });//Fin de MongoClient.connect
+}//Fin de funcion mongoGetCollectionTarget
 
 function mongoGetCollectionVerb(response){
         MongoClient.connect('mongodb://localhost:27017/lrs1', (err, db) => {
@@ -121,9 +148,8 @@ function mongoGetCollectionVerb(response){
         //Construccion del projection document
         var projection = {"_id": 0, "verbo": 1};
         db.collection('verbos').find(query).project(projection).toArray(function(err, docs) {
-        //db.collection('statements').find().limit(10).project(projection).toArray(function(err, docs) {
             if(err) { 
-                    response.status(500).send('mongoGetCollectionActor , Error en get de autocomplete');
+                    response.status(500).send('mongoGetCollectionVerb , Error en get de autocomplete');
                     console.log('Estoy dentro del get del mongoGetCollectionVerb, ERROR ' ,err);
                 }else{
                     response.json(docs)
@@ -143,7 +169,6 @@ function mongoGetCollectionActor(response){
         //Construccion del projection document
         var projection = {"_id": 0, "actor": 1};
         db.collection('actors').find(query).project(projection).toArray(function(err, docs) {
-        //db.collection('statements').find().limit(10).project(projection).toArray(function(err, docs) {
             if(err) { 
                     response.status(500).send('mongoGetCollectionActor , Error en get de autocomplete');
                     console.log('Estoy dentro del get del mongoGetCollectionActor, ERROR ' ,err);
