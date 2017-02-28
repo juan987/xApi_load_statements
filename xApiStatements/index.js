@@ -554,7 +554,9 @@ function crearDB(data){
                       dropColleccionVerbos();
                     dbCrearColeccionDeVerbs();
                       dropColleccionTargets();
-                    crearColeccionDeTargets(); 
+                    crearColeccionDeTargets();
+                     dropColleccionTargetsWithParentField();
+                    crearColeccionDeTargetsWithParentField();
                     db.close();             
             });
         });//Fin de MongoClient.connect
@@ -669,6 +671,7 @@ function dropColleccionTargets(){
 
 }
 
+//Los docs de esta colleccin no tienen field parent.
 function crearColeccionDeTargets(){
     MongoClient.connect('mongodb://localhost:27017/lrs1', function(err, db) {  
         assert.equal(null, err);
@@ -702,4 +705,68 @@ function crearColeccionDeTargets(){
             db.close();
         });//Fin de aggregate
     });//Fin de  MongoClient.connect
-}//Fin de funcion crearColeccionDeObjects
+}//Fin de funcion crearColeccionDeTargets
+
+
+
+function dropColleccionTargetsWithParentField(){
+    MongoClient.connect('mongodb://localhost:27017/lrs1', function(err, db) {  
+            assert.equal(null, err);
+            console.log("Successfully connected to MongoDB para borrar coleccion de targetsConParent.");
+            //Borrar toda la coleccion, para no duplicar datos cada vez que arranca el server
+            db.dropCollection("targetsConParent", function(err, resp){
+                assert.equal(null, err);
+                console.log('coleccion de targetsConParent borrada', resp);
+                db.close();
+            });
+        });//Fin de MongoClient.connect
+
+}
+//Los docs de esta colleccin no tienen field parent.
+//REf: https://docs.mongodb.com/manual/tutorial/model-tree-structures-with-parent-references/
+function crearColeccionDeTargetsWithParentField(){
+    MongoClient.connect('mongodb://localhost:27017/lrs1', function(err, db) {  
+        assert.equal(null, err);
+        console.log("Successfully connected to MongoDB en crearColeccionDeTargetsWithParentField.");
+        var collectionItem = db.collection('statements');
+        /*collectionItem.aggregate([
+                { $group: {
+                    _id: {miObjeto:"$target"},
+                    num: { $sum: 1 }
+                } },
+                { $sort: { _id: 1 } },
+                {
+                    $project:{
+                        _id:0, objeto:"$_id.miObjeto" 
+                    }
+                }
+            ],*/
+        collectionItem.aggregate([
+                { $group: {
+                    _id: {miObjeto:"$target", parent:"$context.contextActivities.parent.id"},
+                    num: { $sum: 1 }
+                } },
+                { $sort: { _id: 1 } },
+                {
+                    $project:{
+                        _id:0, objeto:"$_id.miObjeto" , parent:"$_id.parent"
+                    }
+                },
+            ],
+            function(err, docs) {//callback del aggregate
+                assert.equal(null, err);
+                if(err) { 
+                    console.log('Estoy dentro del get del callback de crear coleccion de targetsConParent, ERROR ' ,err);
+                }else{
+                    console.log('coleccion de targetsConParent: ' ,docs);
+                    //Crear coleccion de actors
+                    let collectionActors = db.collection('targetsConParent');
+                    collectionActors.insertMany(docs, function(err, res){
+                        assert.equal(null, err);
+                        console.log('coleccion de objetos targetsConParent: ', res)
+                    });
+                }
+            db.close();
+        });//Fin de aggregate
+    });//Fin de  MongoClient.connect
+}//Fin de funcion crearColeccionDeTargetsWithParentField
