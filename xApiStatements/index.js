@@ -132,6 +132,9 @@ http.listen(3000,()=>{
 //******************************
 //1 marzo, general el treeObject 
 function mongoGetArbolActividades(response){
+
+    //prueba
+    /*
     docs1 = {data:[]};
     rama = {
         saludo: "hola",
@@ -140,6 +143,7 @@ function mongoGetArbolActividades(response){
     docs1.data.push(rama);
     console.log('en funcion mongoGetArbolActividades', docs1)
     response.json(docs1);
+    */
 
     //Prueba 3 de docs miscelaneous: Me da todos los padres con hijos
     /*db.statements.aggregate([
@@ -182,30 +186,30 @@ function mongoGetArbolActividades(response){
                     console.log('coleccion de mongoGetArbolActividades, longitud del array docs: ' ,docs.length);
                     console.log('coleccion de mongoGetArbolActividades', 
                                 'longitud del array de hijos del elemento 0: ' ,docs[0].children.length);
-                    console.log('coleccion de mongoGetArbolActividades', 
-                                'longitud del array de hijos del elemento 1: ' ,docs[1].children.length);
+
                     //construccion del objeto recursivo de treenode
                     //con padres con hijos, y con padres sin hijos, segun los datos de la coleccion statements
-                    arbol = {data:[]};
-                    padre = {
-                        "label": "cc",
-                        "data": "cc",
-                        "expandedIcon": "fa-folder-open",
-                        "collapsedIcon": "fa-folder",
-                        "children": []
-                    };
-                    hijo = {
-                        "label": "cc",
-                        "data": "cc",
-                        "expandedIcon": "fa-folder-open",
-                        "collapsedIcon": "fa-folder",
-                        "children": []
-                    };
-                    //for(let i=0; i<docs.length, i++)
+                    let arbol = {data:[]};
+
                     docs.forEach(function(datosNodoPadre) {
+                        let padre = {
+                            "label": "cc",
+                            "data": "cc",
+                            "expandedIcon": "fa-folder-open",
+                            "collapsedIcon": "fa-folder",
+                            "children": []
+                        };
                         padre.label = datosNodoPadre.parent;
-                        console.log('actividades padre: ', datosNodoPadre.parent )
+                        //console.log('actividades padre: ', datosNodoPadre.parent )
                             datosNodoPadre.children.forEach(function(datosHijo){
+                                let hijo = {
+                                    "label": "cc",
+                                    "data": "cc",
+                                    "expandedIcon": "fa-folder-open",
+                                    "collapsedIcon": "fa-folder",
+                                    "children": []
+                                };
+                                console.log('actividad hija de la coleccion:', datosHijo.actividad)//OK
                                 hijo.label = datosHijo.actividad;
                                 //hijo.data = datosHijo.name +", " +datosHijo.description
                                 hijo.data = datosHijo.name
@@ -214,13 +218,14 @@ function mongoGetArbolActividades(response){
                         //al terminar, push del padre en el objeto arbol
                         arbol.data.push(padre);
                         //limpio el array de padre
-                        padre.children = [];
+                        //padre.children = [];
                     });//fin del foreach de docs
                     //Muestra el arbol por consola
                     arbol.data.forEach(function(elementoDelArbol) {
                         console.log('mongoGetArbolActividades, el tree node es' ,elementoDelArbol);
                     });
-
+                    //Enviamos los datos al fronend
+                    response.json(arbol)
                 }//fin del else
             db.close();
         });//Fin de aggregate
