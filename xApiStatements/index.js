@@ -125,16 +125,112 @@ http.listen(3000,()=>{
     console.log("Servidor de xAPI iniciado en *:3000");
 });
 
+
+//******************************
+//******************************
+//******************************
+//******************************
+//1 marzo, general el treeObject 
 function mongoGetArbolActividades(response){
-    docs = {data:[]};
+    docs1 = {data:[]};
     rama = {
         saludo: "hola",
         nombre: "Juan Miguel"
     }
-    docs.data.push(rama);
-    console.log('en funcion mongoGetArbolActividades', docs)
-    response.json(docs);
+    docs1.data.push(rama);
+    console.log('en funcion mongoGetArbolActividades', docs1)
+    response.json(docs1);
+
+    //Prueba 3 de docs miscelaneous: Me da todos los padres con hijos
+    /*db.statements.aggregate([
+        {$unwind:"$context.contextActivities.parent"},
+        { $group: {
+            _id: {parent:"$context.contextActivities.parent.id"},
+            children: { $push:  { actividad: "$target.id", nombre: "$target.definition.name", description: "$target.definition.description" } }
+        } },
+        { $sort: { _id: 1 } },
+        {
+            $project:{
+                _id:0 ,  parent:"$_id.parent", children:1
+            }
+        },
+    ]) */
+
+    MongoClient.connect('mongodb://localhost:27017/lrs1', function(err, db) {  
+        assert.equal(null, err);
+        console.log("Successfully connected to MongoDB para generar arbol de padres con hijos.");
+        var collectionItem = db.collection('statements');
+        collectionItem.aggregate([//como en prueba 3 de miscelaneous
+                {$unwind:"$context.contextActivities.parent"},
+                { $group: {
+                    _id: {parent:"$context.contextActivities.parent.id"},
+                    children: { $push:  { actividad: "$target.id", nombre: "$target.definition.name", description: "$target.definition.description" } }
+                } },
+                { $sort: { _id: 1 } },
+                {
+                    $project:{
+                        _id:0 ,  parent:"$_id.parent", children:1
+                    }
+                },
+            ],
+            function(err, docs) {//callback del aggregate
+                assert.equal(null, err);
+                if(err) { 
+                    console.log('Estoy dentro del get del callback de mongoGetArbolActividades, ERROR ' ,err);
+                }else{
+                    console.log('coleccion de mongoGetArbolActividades: ' ,docs);
+                    console.log('coleccion de mongoGetArbolActividades, longitud del array docs: ' ,docs.length);
+                    console.log('coleccion de mongoGetArbolActividades', 
+                                'longitud del array de hijos del elemento 0: ' ,docs[0].children.length);
+                    console.log('coleccion de mongoGetArbolActividades', 
+                                'longitud del array de hijos del elemento 1: ' ,docs[1].children.length);
+                    //construccion del objeto recursivo de treenode
+                    //con padres con hijos, y con padres sin hijos, segun los datos de la coleccion statements
+                    arbol = {data:[]};
+                    padre = {
+                        "label": "cc",
+                        "data": "cc",
+                        "expandedIcon": "fa-folder-open",
+                        "collapsedIcon": "fa-folder",
+                        "children": []
+                    };
+                    hijo = {
+                        "label": "cc",
+                        "data": "cc",
+                        "expandedIcon": "fa-folder-open",
+                        "collapsedIcon": "fa-folder",
+                        "children": []
+                    };
+                    //for(let i=0; i<docs.length, i++)
+                    docs.forEach(function(datosNodoPadre) {
+                        padre.label = datosNodoPadre.parent;
+                        console.log('actividades padre: ', datosNodoPadre.parent )
+                            datosNodoPadre.children.forEach(function(datosHijo){
+                                hijo.label = datosHijo.actividad;
+                                //hijo.data = datosHijo.name +", " +datosHijo.description
+                                hijo.data = datosHijo.name
+                                padre.children.push(hijo);
+                            });//Fin del forEach de children
+                        //al terminar, push del padre en el objeto arbol
+                        arbol.data.push(padre);
+                        //limpio el array de padre
+                        padre.children = [];
+                    });//fin del foreach de docs
+                    //Muestra el arbol por consola
+                    arbol.data.forEach(function(elementoDelArbol) {
+                        console.log('mongoGetArbolActividades, el tree node es' ,elementoDelArbol);
+                    });
+
+                }//fin del else
+            db.close();
+        });//Fin de aggregate
+    });//Fin de MongoClient.connect
 }//Fin de function mongoGetArbolActividades(response)
+//Fin e generar el tree object
+//******************************
+//******************************
+//******************************
+//******************************
 
 function mongoGetCollectionTarget(response){
         MongoClient.connect('mongodb://localhost:27017/lrs1', (err, db) => {
