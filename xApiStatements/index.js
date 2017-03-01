@@ -211,8 +211,8 @@ function mongoGetArbolActividades(response){
                                 };
                                 console.log('actividad hija de la coleccion:', datosHijo.actividad)//OK
                                 hijo.label = datosHijo.actividad;
-                                //hijo.data = datosHijo.name +", " +datosHijo.description
-                                hijo.data = datosHijo.name
+                                hijo.data = datosHijo.nombre +", " +datosHijo.description
+                                //hijo.data = datosHijo.name
                                 padre.children.push(hijo);
                             });//Fin del forEach de children
                         //al terminar, push del padre en el objeto arbol
