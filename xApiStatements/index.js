@@ -60,6 +60,13 @@ routerRest.route("/collection/target")
             mongoGetCollectionTarget(response);
 });
 
+//Ruta para el get de arbol de actividades
+routerRest.route("/arbol/actividades")
+        .get((request, response)=>{
+            console.log('En get de collection targets');
+            mongoGetArbolActividades(response);
+});
+
 //**************************************************************************************
 //Ruta para el http del autocomplete de nombre
 routerRest.route("/actor/autocomplete/:text")
@@ -117,6 +124,17 @@ my_app.use("/", routerRest);
 http.listen(3000,()=>{
     console.log("Servidor de xAPI iniciado en *:3000");
 });
+
+function mongoGetArbolActividades(response){
+    docs = {data:[]};
+    rama = {
+        saludo: "hola",
+        nombre: "Juan Miguel"
+    }
+    docs.data.push(rama);
+    console.log('en funcion mongoGetArbolActividades', docs)
+    response.json(docs);
+}//Fin de function mongoGetArbolActividades(response)
 
 function mongoGetCollectionTarget(response){
         MongoClient.connect('mongodb://localhost:27017/lrs1', (err, db) => {
