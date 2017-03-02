@@ -35,7 +35,8 @@ routerRest.route("/reporte1")
             console.log('En post DE reporte 1');
             console.log("Post: leo todo el json de l request de report1" ,request.body);
             //console.log("Post: solo leo un dato del json  " ,request.body.dato);
-            mongoReporte1(request.body, response);
+            //mongoReporte1(request.body, response);
+            mongoReporte1plus(request.body, response);
 });
 
 //Ruta para el get de la colleccion actors
@@ -332,8 +333,96 @@ function mongoReporte1(body, response){
             return db.close();
         });//Cierre de toArray
     });//Fin de MongoClient.connect
-
 }//Fin de mongoReporte1
+
+//Funcion para obtener el reporte 1 plus en MongoDB
+//Este report puede recibir cualquier combinacion de actor, verb(uri) y el uri de objeto o target (activity)
+function mongoReporte1plus(body, response){
+    MongoClient.connect('mongodb://localhost:27017/lrs1', (err, db) => {
+        assert.equal(err,null);
+        console.log('en mongoReporte1plus, recibido :', body);
+        //Construccion del query document
+        //var query = {};
+        //query = {"actor.name":body.name};
+        let query = construirQuery(body);
+        //Construccion del projection document
+        var projection = {"_id": 0, "originalJSON": 1};
+        db.collection('statements').find(query).project(projection).toArray(function(err, docs) {
+        //db.collection('statements').find().limit(10).project(projection).toArray(function(err, docs) {
+            if(err) { 
+                    response.status(500).send('Autocomplete , Error en get de reporte1plus');
+                    console.log('mongoReporte1plus Estoy dentro del get del , ERROR ' ,err);
+                }else{
+                    response.json(docs)
+                    //console.log('mongoReporte1plus Estoy dentro del get del , actors: ' ,docs);
+            }
+            return db.close();
+        });//Cierre de toArray
+    });//Fin de MongoClient.connect
+}//Fin de mongoReporte1plus
+
+function construirQuery(body){//body tiene name, verb, activity
+    console.log('En construirQuery, datos recibidos del frontend para la query: ', body)
+    let name = body.name;
+    let verb = body.verb;
+    let activity = body.activity;
+    let query = {};
+
+    if (name.localeCompare("") != 0  && verb.localeCompare("") == 0  && activity.localeCompare("") == 0){
+        //name SI, verbo NO, activity NO.
+        query = {"actor.name":name};
+        console.log('En construirQuery, La query de busqueda es: ', query);
+        return query;
+    }
+
+    if (name.localeCompare("") != 0  && verb.localeCompare("") != 0  && activity.localeCompare("") == 0){
+        //name SI, verbo SI, activity NO.
+        query = {"actor.name":name, "verb.id":verb};
+        console.log('En construirQuery, La query de busqueda es: ', query);
+        return query;
+    }
+
+    if (name.localeCompare("") != 0  && verb.localeCompare("") != 0  && activity.localeCompare("") != 0){
+        //name SI, verbo SI, activity SI.
+        query = {"actor.name":name, "verb.id":verb,  "target.id":activity };
+        console.log('En construirQuery, La query de busqueda es: ', query);
+        return query;
+    }
+
+    if (name.localeCompare("") == 0  && verb.localeCompare("") != 0  && activity.localeCompare("") == 0){
+        //name NO, verbo SI, activity NO.
+        query = {"verb.id":verb};
+        console.log('En construirQuery, La query de busqueda es: ', query);
+        return query;
+    }
+
+    if (name.localeCompare("") == 0  && verb.localeCompare("") != 0  && activity.localeCompare("") != 0){
+        //name NO, verbo SI, activity SI.
+        query = {"verb.id":verb,  "target.id":activity };
+        console.log('En construirQuery, La query de busqueda es: ', query);
+        return query;
+    }
+
+    if (name.localeCompare("") == 0  && verb.localeCompare("") == 0  && activity.localeCompare("") != 0){
+        //name NO, verbo NO, activity SI.
+        query = {"target.id":activity };
+        console.log('En construirQuery, La query de busqueda es: ', query);
+        return query;
+    }
+
+    if (name.localeCompare("") != 0  && verb.localeCompare("") == 0  && activity.localeCompare("") != 0){
+        //name SI, verbo NO, activity SI.
+        query = {"actor.name":name,  "target.id":activity };
+        console.log('En construirQuery, La query de busqueda es: ', query);
+        return query;
+    }
+
+    //Busqueda por defecto que devuelve un array vacio
+        query = {"actor.name":"ZZZZZZZZZZZZZZ"}
+        console.log('En construirQuery, QUERY POR DEFECTO: ', query);
+        return query;
+}//Fin de construirQuery
+
 
 //Funcion para buscar en mongo db con el AUTOCOMPLETE de nombre
 function mongoAutocomplete(text, response){
