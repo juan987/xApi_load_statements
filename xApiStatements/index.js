@@ -202,6 +202,8 @@ function mongoGetArbolActividades(response){
                         padre.label = datosNodoPadre.parent;
                         //console.log('actividades padre: ', datosNodoPadre.parent )
                             datosNodoPadre.children.forEach(function(datosHijo){
+                                //hijo original
+                                /*
                                 let hijo = {
                                     "label": "cc",
                                     "data": "cc",
@@ -209,10 +211,17 @@ function mongoGetArbolActividades(response){
                                     "collapsedIcon": "fa-folder",
                                     "children": []
                                 };
+                                */
+                                let hijo = {
+                                    "label": "cc",
+                                    "data": "cc",
+                                    "icon": "fa-file-image-o"
+                                };
                                 console.log('actividad hija de la coleccion:', datosHijo.actividad)//OK
                                 hijo.label = datosHijo.actividad;
-                                hijo.data = datosHijo.nombre +", " +datosHijo.description
-                                //hijo.data = datosHijo.name
+                                //hijo.data = datosHijo.nombre +", " +datosHijo.description
+                                hijo.data = datosHijo.description
+                                //hijo.data = datosHijo.nombre
                                 padre.children.push(hijo);
                             });//Fin del forEach de children
                         //al terminar, push del padre en el objeto arbol
@@ -225,7 +234,8 @@ function mongoGetArbolActividades(response){
                         console.log('mongoGetArbolActividades, el tree node es' ,elementoDelArbol);
                     });
                     //Enviamos los datos al fronend
-                    response.json(arbol)
+                    //response.json(arbol)
+                    response.json(arbol.data)
                 }//fin del else
             db.close();
         });//Fin de aggregate
