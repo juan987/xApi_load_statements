@@ -61,7 +61,8 @@ routerRest.route("/collection/target")
             mongoGetCollectionTarget(response);
 });
 
-//Ruta para el get de arbol de actividades
+//Ruta para el get de arbol de actividades, ENVIA LAS ACTIVIDADES(TARGETS, OBJECTS) EN FORMATO mongoGetArbolActividades
+//para ser mostradas por el activity-tree.component del front end.
 routerRest.route("/arbol/actividades")
         .get((request, response)=>{
             console.log('En get de collection targets');
@@ -134,17 +135,6 @@ http.listen(3000,()=>{
 //1 marzo, general el treeObject 
 function mongoGetArbolActividades(response){
 
-    //prueba
-    /*
-    docs1 = {data:[]};
-    rama = {
-        saludo: "hola",
-        nombre: "Juan Miguel"
-    }
-    docs1.data.push(rama);
-    console.log('en funcion mongoGetArbolActividades', docs1)
-    response.json(docs1);
-    */
 
     //Prueba 3 de docs miscelaneous: Me da todos los padres con hijos
     /*db.statements.aggregate([
@@ -940,7 +930,7 @@ function dropColleccionTargetsWithParentField(){
         });//Fin de MongoClient.connect
 
 }
-//Los docs de esta colleccin no tienen field parent.
+//Los docs de esta colleccin tienen field parent.
 //REf: https://docs.mongodb.com/manual/tutorial/model-tree-structures-with-parent-references/
 function crearColeccionDeTargetsWithParentField(){
     MongoClient.connect('mongodb://localhost:27017/lrs1', function(err, db) {  
