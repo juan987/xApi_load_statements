@@ -155,6 +155,7 @@ function mongoGetArbolActividades(response){
         assert.equal(null, err);
         console.log("Successfully connected to MongoDB para generar arbol de padres con hijos.");
         var collectionItem = db.collection('statements');
+        //Generar los padres con hijos
         collectionItem.aggregate([//como en prueba 3 de miscelaneous
                 {$unwind:"$context.contextActivities.parent"},
                 { $group: {
@@ -166,7 +167,7 @@ function mongoGetArbolActividades(response){
                     $project:{
                         _id:0 ,  parent:"$_id.parent", children:1
                     }
-                },
+                }
             ],
             function(err, docs) {//callback del aggregate
                 assert.equal(null, err);
@@ -230,7 +231,7 @@ function mongoGetArbolActividades(response){
                         //**********************************************
                         ///*
                             //Este aggregate devuelve todos los statement que NO tienen una
-                            //actividad padre.
+                            //actividad padre, o padres sin hijos
                             collectionItem.aggregate([
                                         {$match:{"context.contextActivities.parent.id":{$exists: false}}},
                                     { $group: {
