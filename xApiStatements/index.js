@@ -172,7 +172,7 @@ function mongoGetArbolActividades(response){
                 assert.equal(null, err);
                 if(err) { 
                     console.log('Estoy dentro del get del callback de mongoGetArbolActividades, ERROR ' ,err);
-                }else{
+                }else{//else 2
                     console.log('coleccion de mongoGetArbolActividades: ' ,docs);
                     console.log('coleccion de mongoGetArbolActividades, longitud del array docs: ' ,docs.length);
                     console.log('coleccion de mongoGetArbolActividades', 
@@ -223,12 +223,63 @@ function mongoGetArbolActividades(response){
                     //Muestra el arbol por consola
                     arbol.data.forEach(function(elementoDelArbol) {
                         console.log('mongoGetArbolActividades, el tree node es' ,elementoDelArbol);
-                    });
+                    });//Fin del arbol.data.forEach
                     //Enviamos los datos al fronend
                     //response.json(arbol)
-                    response.json(arbol.data)
-                }//fin del else
-            db.close();
+                        //**********************************************
+                        //**********************************************
+                        ///*
+                            //Este aggregate devuelve todos los statement que NO tienen una
+                            //actividad padre.
+                            collectionItem.aggregate([
+                                        {$match:{"context.contextActivities.parent.id":{$exists: false}}},
+                                    { $group: {
+                                        _id: {parent:"$target.id"},
+                                    } },
+                                    { $sort: { _id: 1 } },
+                                    {
+                                        $project:{
+                                            _id:0 ,  parent:"$_id.parent"
+                                        }
+                                    }
+                                ],
+                                function(err, docsPadresSinHijos) {//callback del aggregate
+                                    assert.equal(null, err);
+                                    if(err) { 
+                                        console.log('Estoy dentro del get del callback de crear coleccion de padres sin hijos, ERROR ' ,err);
+                                    }else{//else 3
+                                        console.log('numero de statements que son padres:  ', docsPadresSinHijos.length);
+                                        console.log('contenido de statements que son padres:  ', docsPadresSinHijos);
+                                        docsPadresSinHijos.forEach(function(datosNodoPadre) {
+                                            console.log('En docsPadresSinHijos.forEach:  ', datosNodoPadre.parent);
+                                            let padre2 = {
+                                                "label": "cc",
+                                                "data": "cc",
+                                                "expandedIcon": "fa-folder-open",
+                                                "collapsedIcon": "fa-folder"
+                                            };
+                                            padre2.label = datosNodoPadre.parent;
+                                            console.log('En docsPadresSinHijos.forEach, padre2:  ', padre2);
+                                            arbol.data.push(padre2);
+                                        });//Fin de docsPadresSinHijos.forEach
+                                        //Muestra el arbol por consola con los nodos padres sin hijos
+                                        arbol.data.forEach(function(elementoDelArbol2) {
+                                            console.log('Arbol con padres sin hijos, el tree node es' ,elementoDelArbol2);
+                                        });//Fin del arbol.data.forEach
+                                        //respuesta
+                                        console.log('json de actividades enviado 1');                        
+                                        response.json(arbol.data);
+                                        console.log('json de actividades enviado 2');
+                                    }//Fin del else 3
+                                //OJO   db.close();
+                            });//Fin de aggregate
+
+                        //*/
+
+                        //**********************************************
+                        //**********************************************
+                }//fin del else 2
+             db.close();
         });//Fin de aggregate
     });//Fin de MongoClient.connect
 }//Fin de function mongoGetArbolActividades(response)

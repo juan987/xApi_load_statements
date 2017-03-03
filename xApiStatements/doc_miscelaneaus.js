@@ -111,4 +111,18 @@ db.statements.aggregate([
     },
 ])
 
+//para sacar los padres puros
+db.statements.aggregate([
+        {$match:{"context.contextActivities.parent.id":{$exists: false}}},
+    { $group: {
+        _id: {parent:"$target.id"},
+    } },
+    { $sort: { _id: 1 } },
+    {
+        $project:{
+            _id:0 ,  parent:"$_id.parent"
+        }
+    },
+
+])
 
